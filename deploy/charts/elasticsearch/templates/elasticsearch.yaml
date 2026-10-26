@@ -1,0 +1,61 @@
+{{- $pool := required "pool is required: set it to the instance name" .Values.pool -}}
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  # ECK names the client Service after the CR: <pool>-es-http.
+  name: {{ $pool }}
+spec:
+  version: {{ .Values.version }}
+  http:
+    tls:
+      selfSignedCertificate:
+        # Every system is reached over plain HTTP inside the cluster.
+        disabled: true
+  nodeSets:
+    - name: default
+      # One instance is one node; cluster mode is out of scope.
+      count: 1
+      config:
+        {{- toYaml .Values.config | nindent 8 }}
+      podTemplate:
+        metadata:
+          labels:
+            # Per-instance identity; must equal the instance's `name` in the
+            # bench config.
+            logs-benchmark.victoriametrics.com/system: {{ $pool }}
+        spec:
+          # Elasticsearch defaults to mmap-backed storage and requires
+          # vm.max_map_count >= 262144 on the node; a global sysctl, so the
+          # privileged init container sets it once per node.
+          initContainers:
+            - name: sysctl
+              securityContext:
+                privileged: true
+                runAsUser: 0
+              command: ["sh", "-c", "sysctl -w vm.max_map_count=262144"]
+          containers:
+            - name: elasticsearch
+              resources:
+                {{- toYaml .Values.resources | nindent 16 }}
+          # Run ONLY on this instance's node pool (label+taint
+          # logs-benchmark.victoriametrics.com/system={{ $pool }}).
+          nodeSelector:
+            logs-benchmark.victoriametrics.com/system: {{ $pool }}
+          tolerations:
+            - key: logs-benchmark.victoriametrics.com/system
+              operator: Equal
+              value: {{ $pool }}
+              effect: NoSchedule
+      volumeClaimTemplates:
+        - metadata:
+            # ECK claims the data volume under this name; renaming it makes the
+            # operator add a second, empty volume instead.
+            name: elasticsearch-data
+          spec:
+            accessModes: [ReadWriteOnce]
+            {{- with .Values.storage.className }}
+            storageClassName: {{ . }}
+            {{- end }}
+            resources:
+              requests:
+                storage: {{ .Values.storage.size }}

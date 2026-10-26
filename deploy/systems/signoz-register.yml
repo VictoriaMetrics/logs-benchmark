@@ -1,0 +1,46 @@
+# One-off onboarding for a fresh SigNoz install: create the first org + admin.
+# Without an org the otel-collector never receives its pipeline config (over
+# opamp) and the query-service rejects logins, so SigNoz neither ingests nor
+# answers queries.
+#
+# Idempotent: once onboarded, /api/v1/register answers "self-registration is
+# disabled", which the loop treats as success; the loop also retries, so it does
+# not race the SigNoz stack's slow cold start.
+# The creds below are plain text; a shared cluster would need them in a Secret.
+#
+# Raw manifest: ${POOL} is inlined here and the whole file goes through the
+# substitution before `kubectl apply`. Never apply it unsubstituted.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${POOL}-register
+spec:
+  backoffLimit: 5
+  activeDeadlineSeconds: 1800 # bound the wait if the SigNoz stack never comes up
+  template:
+    spec:
+      restartPolicy: OnFailure
+      # no toleration: lands on the untainted harness node; this is setup, not
+      # a measured system.
+      containers:
+        - name: register
+          image: curlimages/curl:8.16.0
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -u
+              body='{"name":"logs-bench","email":"logs-bench@example.com","password":"LogsBenchmark1!","orgDisplayName":"logs-bench","orgName":"logs-bench"}'
+              # The query-service Service takes the release name (= POOL) only
+              # when that name contains "signoz" (helm fullname rule), so keep
+              # "signoz" in the instance name (signoz, signoz2, signoz-ssd, ...).
+              while true; do
+                r=$(curl -sS -m 10 -X POST http://${POOL}:8080/api/v1/register \
+                  -H 'Content-Type: application/json' -d "$body" || true)
+                echo "register -> $r"
+                case "$r" in
+                  *'"status":"success"'*)             echo "onboarded";         exit 0 ;;
+                  *'self-registration is disabled'*)  echo "already onboarded"; exit 0 ;;
+                esac
+                echo "signoz not ready yet; retrying in 5s..."
+                sleep 5
+              done

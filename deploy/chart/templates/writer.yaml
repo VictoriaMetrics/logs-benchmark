@@ -1,0 +1,64 @@
+# The writer Deployment: one pod generating the record stream, with one
+# -systemName/-systemType/-systemAddr triple per listed system (write endpoint).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: writer
+  labels:
+    app: bench
+    role: writer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bench
+      role: writer
+  template:
+    metadata:
+      labels:
+        app: bench
+        role: writer
+        # bench machinery, not a system under test
+        logs-benchmark.victoriametrics.com/system: harness
+    spec:
+      # delays ingestion by writer.startDelaySeconds
+      initContainers:
+        - name: start-delay
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep {{ $.Values.writer.startDelaySeconds }}"]
+      containers:
+        - name: writer
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          args:
+            - -role=writer
+{{- range $sys := .Values.systems }}
+            - -systemName={{ $sys.name }}
+            - -systemType={{ $sys.type }}
+            - -systemAddr={{ $sys.addr }}
+{{- end }}
+{{- /* integer values MUST go through `int`: YAML numbers are float64 in
+     templates, and Go renders floats >= 1e6 in scientific notation ("2e+06"),
+     which the binary's flag parser rejects. */}}
+            - -rate={{ int $.Values.writer.rate }}
+            - -rampStep={{ int $.Values.writer.rampStep }}
+            - -rampInterval={{ $.Values.writer.rampInterval }}
+            - -rampMax={{ int $.Values.writer.rampMax }}
+            - -rampHold={{ $.Values.writer.rampHold }}
+            - -dropOnFull={{ $.Values.writer.dropOnFull }}
+            - -buffer={{ int $.Values.writer.buffer }}
+            - -batchLines={{ int $.Values.writer.batchLines }}
+            - -workers={{ int $.Values.writer.workers }}
+            - -generators={{ int $.Values.writer.generators }}
+            - -hosts={{ int $.Values.writer.hosts }}
+            - -apps={{ int $.Values.writer.apps }}
+            - -seed={{ int $.Values.writer.seed }}
+            - -httpListenAddr=:8080
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 2

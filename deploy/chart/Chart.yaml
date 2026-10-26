@@ -1,0 +1,6 @@
+apiVersion: v2
+name: logs-bench
+description: The logs-benchmark harness, with its writer, querier and Grafana dashboard.
+type: application
+version: 0.1.0
+appVersion: dev

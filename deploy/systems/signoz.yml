@@ -1,0 +1,39 @@
+# SigNoz stack (ClickHouse + Zookeeper + otel-collector + query-service) via the
+# official signoz/signoz chart.
+# Engine config for every instance, hardware-agnostic; per-instance identity:
+# pin/signoz.yaml; sizing (PVC size and storage class): the benchmark's
+# systems/signoz.yaml.
+#
+# No resource limits (a hard limit would cap performance and skew the result);
+# ClickHouse self-caps via max_server_memory_usage_to_ram_ratio below. Requests
+# are small floors so the whole stack still schedules onto one node.
+
+clickhouse:
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  # Cap ClickHouse at a FRACTION of the node's RAM, so it ports across node
+  # sizes. Its default 0.9 over-commits here: ClickHouse shares the node with
+  # the collector, query-service and zookeeper and has no cgroup limit telling
+  # it its real share, so a heavy query OOM-kills the node. 0.6 leaves room for
+  # the siblings + OS and makes ClickHouse spill or error instead of crashing.
+  settings:
+    max_server_memory_usage_to_ram_ratio: "0.6"
+  zookeeper:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+otelCollector:
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+signoz:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi

@@ -1,0 +1,23 @@
+# Sibling Service exposing the HyperDX REST API to the querier. The chart's
+# clickstack-app Service publishes only the UI (3000) and OpAMP (4320) ports, so
+# nothing routes to the HyperDX pod's api-port (8000). The run config's
+# clickstack queryAddr points here (http://<POOL>-hdx-api:8000).
+#
+# Raw manifest: ${POOL} is inlined here and the whole file goes through the
+# substitution before `kubectl apply`. Never apply it unsubstituted.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${POOL}-hdx-api
+  labels:
+    logs-benchmark.victoriametrics.com/system: ${POOL}
+spec:
+  # instance (= release name = POOL) + name (= chart name, constant) uniquely
+  # select the HyperDX pod.
+  selector:
+    app.kubernetes.io/instance: ${POOL}
+    app.kubernetes.io/name: clickstack
+  ports:
+    - name: api
+      port: 8000
+      targetPort: api-port

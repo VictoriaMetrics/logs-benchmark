@@ -1,0 +1,19 @@
+# VictoriaLogs via the official vm/victoria-logs-single chart. Only what the
+# benchmark methodology requires is overridden; the rest stays at chart defaults.
+# Engine config for every instance, hardware-agnostic; per-instance identity:
+# pin/victorialogs.yaml; sizing (PVC size and storage class): the benchmark's
+# systems/victorialogs.yaml.
+server:
+  # pinned so the measured version never floats with chart updates
+  image:
+    tag: v1.53.0
+  # No limits: the system owns its node, so the node is the cap. A CPU limit
+  # would CFS-throttle the parallel scan of VictoriaLogs, which also sizes itself
+  # to the node's RAM.
+  # Requests are only a scheduling floor.
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  persistentVolume:
+    enabled: true

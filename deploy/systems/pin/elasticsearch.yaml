@@ -1,0 +1,9 @@
+# Names Elasticsearch's instance and pins its pod onto its dedicated node
+# (engine config: ../elasticsearch.yml). ${POOL} is filled in at install time
+# and must match that node pool's logs-benchmark.victoriametrics.com/system
+# label and NoSchedule taint, or the pod will not schedule. Never applied
+# unsubstituted.
+#
+# One value: the chart builds the CR name, the pod label, the nodeSelector and
+# the toleration from it.
+pool: ${POOL}

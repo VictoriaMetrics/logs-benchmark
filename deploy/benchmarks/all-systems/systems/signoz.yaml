@@ -1,0 +1,9 @@
+# Sizing for this benchmark's reference hardware: n2d-standard-8 nodes
+# (8 vCPU, 32 GiB) with GKE pd-balanced disks. Every instance gets the same PVC
+# size and the same storage class, because pd-balanced IOPS and throughput scale
+# with volume size, so unequal volumes would mean unequal disks. On another
+# cloud, change the class in every overlay in this directory at once.
+clickhouse:
+  persistence:
+    size: 500Gi
+    storageClass: standard-rwo

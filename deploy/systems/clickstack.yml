@@ -1,0 +1,67 @@
+# ClickStack (ClickHouse's HyperDX-based observability stack) via the official
+# ClickHouse/ClickStack-helm-charts `clickstack` chart. It is operator-driven:
+# ClickHouseCluster + KeeperCluster CRs, a MongoDBCommunity CR (HyperDX app
+# metadata), and the opentelemetry-collector subchart for OTLP ingest into
+# default.otel_logs. The clickstack-operators chart must be installed first.
+# Engine config for every instance, hardware-agnostic; per-instance identity:
+# pin/clickstack.yaml; sizing (PVC size and storage class): the benchmark's
+# systems/clickstack.yaml.
+
+clickhouse:
+  enabled: true
+  keeper:
+    spec:
+      replicas: 1
+      containerTemplate:
+        image:
+          repository: clickhouse/clickhouse-keeper
+          # pinned: the operator's default tag is `latest`; matches the server
+          tag: "25.7-alpine"
+  cluster:
+    spec:
+      replicas: 1
+      shards: 1
+      containerTemplate:
+        image:
+          repository: clickhouse/clickhouse-server
+          tag: "25.7-alpine" # pinned so the measured version never floats
+        resources:
+          # Small floor and no limit, so ClickHouse bursts into the whole node.
+          # The floor must stay small: Keeper, Mongo, HyperDX and the collector
+          # all schedule onto the same node. `limits: null` deletes the chart's
+          # default 2Gi memory cap, which a plain map merge would keep.
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits: null
+      dataVolumeClaimSpec:
+        accessModes: [ReadWriteOnce]
+
+mongodb:
+  enabled: true # HyperDX app metadata only, no log data
+  spec:
+    members: 1
+    type: ReplicaSet
+
+hyperdx:
+  deployment:
+    replicas: 1
+    # HyperDX logs itself into this stack's otel_logs while the key is set;
+    # the chart sets a placeholder key
+    env:
+      - name: HYPERDX_API_KEY
+        value: ""
+      # usage reporting to HyperDX's cloud, separate from the key
+      - name: USAGE_STATS_ENABLED
+        value: "false"
+
+# The chart sets OPAMP_SERVER_URL (from the clickstack-config ConfigMap), which
+# puts the collector in OpAMP-supervisor mode: HyperDX then pushes a config that
+# leaves the OTLP receiver declared but unwired, so port 4318 never opens.
+# Emptying the var (a container env wins over envFrom) selects the image's
+# standalone config instead: otlp/hyperdx on 4318 wired straight to the
+# ClickHouse exporter (default.otel_logs).
+otel-collector:
+  extraEnvs:
+    - name: OPAMP_SERVER_URL
+      value: ""

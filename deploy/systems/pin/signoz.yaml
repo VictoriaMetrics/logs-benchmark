@@ -1,0 +1,61 @@
+# Labels SigNoz's pods and pins them onto its dedicated node
+# (engine config: ../signoz.yml). ${POOL} is filled in at install time and must
+# match that node pool's logs-benchmark.victoriametrics.com/system label and
+# NoSchedule taint, or the pod will not schedule. Never applied unsubstituted.
+#
+# SigNoz is a multi-pod stack, so the pin repeats for every component the chart
+# lets us reach.
+
+clickhouse:
+  podLabels:
+    logs-benchmark.victoriametrics.com/system: ${POOL}
+  nodeSelector:
+    logs-benchmark.victoriametrics.com/system: ${POOL}
+  tolerations:
+    - key: logs-benchmark.victoriametrics.com/system
+      operator: Equal
+      value: ${POOL}
+      effect: NoSchedule
+  zookeeper:
+    podLabels:
+      logs-benchmark.victoriametrics.com/system: ${POOL}
+    nodeSelector:
+      logs-benchmark.victoriametrics.com/system: ${POOL}
+    tolerations:
+      - key: logs-benchmark.victoriametrics.com/system
+        operator: Equal
+        value: ${POOL}
+        effect: NoSchedule
+
+otelCollector:
+  podLabels:
+    logs-benchmark.victoriametrics.com/system: ${POOL}
+  nodeSelector:
+    logs-benchmark.victoriametrics.com/system: ${POOL}
+  tolerations:
+    - key: logs-benchmark.victoriametrics.com/system
+      operator: Equal
+      value: ${POOL}
+      effect: NoSchedule
+
+# The chart has no setting for the labels of the signoz pod, so that pod is
+# pinned but not labeled.
+signoz:
+  nodeSelector:
+    logs-benchmark.victoriametrics.com/system: ${POOL}
+  tolerations:
+    - key: logs-benchmark.victoriametrics.com/system
+      operator: Equal
+      value: ${POOL}
+      effect: NoSchedule
+
+# schema-migration Job (a helm pre-upgrade hook on upgrades); pin it too so it
+# lands on the same node as the rest of the stack.
+telemetryStoreMigrator:
+  nodeSelector:
+    logs-benchmark.victoriametrics.com/system: ${POOL}
+  tolerations:
+    - key: logs-benchmark.victoriametrics.com/system
+      operator: Equal
+      value: ${POOL}
+      effect: NoSchedule

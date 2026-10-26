@@ -1,0 +1,78 @@
+# Run config: ingest-ceiling benchmark across all six systems.
+#
+# The writer ramps the target rate up in steps; each system drops what it cannot
+# keep up with (dropOnFull=true) and plateaus at its own ceiling, giving one
+# ingest-ceiling number per system, read off the "Ingest rate: target vs stored
+# (lines/s, server-side)" panel. See README.md here for the runbook.
+#
+# Usage: layered on top of chart defaults via helm -f.
+
+writer:
+  # A step is long enough that a system either sustains the rate or visibly
+  # fails it. A system that plateaus is read from its plateau, so the step size
+  # does not limit that reading; a system that collapses is resolved only to
+  # one step, and needs its own run with finer steps.
+  # below every system's ceiling, so every instance tracks the first step
+  rate: 10000
+  rampStep: 10000
+  rampInterval: 10m
+  # A bit above the fastest system's expected ceiling on the 8-vCPU reference
+  # nodes; past it the ramp only wastes run time. Raise it if the fastest system
+  # still tracks the target here.
+  rampMax: 180000
+  # Bounds the run: 18 levels of 10m (the last one is the hold) ~ 3h of load.
+  rampHold: 10m
+  # A slow system sheds load instead of stalling the shared generator, so every
+  # system faces the full target rate and plateaus independently.
+  dropOnFull: true
+  # ~2s of cushion at 180k lines/s, so a normal flush/merge/GC pause is not
+  # counted as a drop; a sustained deficit still fills it within one ramp step.
+  buffer: 400000
+  startDelaySeconds: 180
+  batchLines: 2000
+  # in-flight requests per system; pinned so the load shape does not change
+  # with the harness machine. 32 sustains rampMax (90 requests/s) while a
+  # request takes under 350ms.
+  workers: 32
+  # streams = hosts x apps = 5000 (125 nodes running 40 apps each)
+  hosts: 125
+  apps: 40
+  seed: 1
+
+querier:
+  # No latency queries during an ingest run: every system is CPU-saturated, so
+  # the latencies would only measure the contention. The stored-rows stats loop
+  # still runs and feeds the server-side stored-rate panels.
+  interval: 0
+  timeout: 30s
+
+# The six instances under test. `name` must equal the POOL used at install time
+# (make install-<engine> POOL=<name>) and is the `system` metric label. `addr`
+# is the ingest endpoint, `queryAddr` the read endpoint when the two differ.
+systems:
+  - name: victorialogs
+    type: victorialogs
+    addr: http://victorialogs-victoria-logs-single-server:9428
+  - name: elasticsearch
+    type: elasticsearch
+    # ECK names the service <CR name>-es-http, and the CR name is the POOL
+    addr: http://elasticsearch-es-http:9200
+  # SigNoz splits write/read: writer -> OTel collector, querier -> query-service.
+  - name: signoz
+    type: signoz
+    addr: http://signoz-otel-collector:4318
+    queryAddr: http://signoz:8080
+  - name: loki
+    type: loki
+    addr: http://loki:3100
+  - name: opensearch
+    type: opensearch
+    # the chart's service is opensearch-cluster-master regardless of clusterName
+    addr: http://opensearch-cluster-master:9200
+  # ClickStack splits write/read like SigNoz, and the read side is the HyperDX
+  # product REST API, not raw ClickHouse. The chart exposes no Service for it;
+  # queryAddr points at the one in deploy/systems/clickstack-hdx-api.yml.
+  - name: clickstack
+    type: clickstack
+    addr: http://clickstack-otel-collector:4318
+    queryAddr: http://clickstack-hdx-api:8000

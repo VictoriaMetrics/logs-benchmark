@@ -1,0 +1,26 @@
+# Elasticsearch via the ECK operator (the classic elasticsearch Helm chart is
+# deprecated), installed as one Elasticsearch CR from deploy/charts/elasticsearch.
+# Only what the benchmark methodology requires is overridden: TLS off, the
+# anonymous superuser below, and the mmap sysctl, which the chart fixes because
+# they are the same for every instance.
+# Engine config for every instance, hardware-agnostic; per-instance identity:
+# pin/elasticsearch.yaml; sizing (PVC size and storage class): the benchmark's
+# systems/elasticsearch.yaml.
+version: 9.5.5 # pinned so the measured version never floats
+
+# Bench clients connect without credentials; ECK has no switch for turning
+# security off outright.
+config:
+  xpack.security.authc.anonymous.username: bench
+  xpack.security.authc.anonymous.roles: superuser
+
+# No limits: the system owns its node, so the node is the cap; requests are only
+# a scheduling floor. A memory limit would also cap the JVM heap: Elasticsearch
+# derives the heap from the container's memory limit, and from the node's RAM
+# when there is none (half of it for a data node, at most 31 GB). ECK's own 2Gi
+# request+limit default applies only when both are unset, so requests alone
+# leave the instance unlimited.
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi

@@ -1,0 +1,77 @@
+# Labels ClickStack's pods and pins them onto its dedicated node
+# (engine config: ../clickstack.yml). ${POOL} is filled in at install time and
+# must match that node pool's logs-benchmark.victoriametrics.com/system label
+# and NoSchedule taint, or the pod will not schedule. Never applied
+# unsubstituted.
+#
+# Multi-pod and operator-driven, so the pin repeats per component in the shape
+# its CR or subchart expects:
+# - ClickHouseCluster/KeeperCluster: the label goes in spec.labels, since
+#   spec.podTemplate is a stripped PodSpec with no metadata; placement fits there.
+# - The chart hard-codes the HyperDX pod labels (no values knob), so that pod
+#   carries no logs-benchmark.victoriametrics.com/system label; only its
+#   placement can be pinned.
+
+clickhouse:
+  keeper:
+    spec:
+      labels:
+        logs-benchmark.victoriametrics.com/system: ${POOL}
+      podTemplate:
+        nodeSelector:
+          logs-benchmark.victoriametrics.com/system: ${POOL}
+        tolerations:
+          - key: logs-benchmark.victoriametrics.com/system
+            operator: Equal
+            value: ${POOL}
+            effect: NoSchedule
+  cluster:
+    spec:
+      labels:
+        logs-benchmark.victoriametrics.com/system: ${POOL}
+      podTemplate:
+        nodeSelector:
+          logs-benchmark.victoriametrics.com/system: ${POOL}
+        tolerations:
+          - key: logs-benchmark.victoriametrics.com/system
+            operator: Equal
+            value: ${POOL}
+            effect: NoSchedule
+
+mongodb:
+  spec:
+    statefulSet:
+      spec:
+        template:
+          metadata:
+            labels:
+              logs-benchmark.victoriametrics.com/system: ${POOL}
+          spec:
+            nodeSelector:
+              logs-benchmark.victoriametrics.com/system: ${POOL}
+            tolerations:
+              - key: logs-benchmark.victoriametrics.com/system
+                operator: Equal
+                value: ${POOL}
+                effect: NoSchedule
+
+hyperdx:
+  deployment:
+    nodeSelector:
+      logs-benchmark.victoriametrics.com/system: ${POOL}
+    tolerations:
+      - key: logs-benchmark.victoriametrics.com/system
+        operator: Equal
+        value: ${POOL}
+        effect: NoSchedule
+
+otel-collector:
+  podLabels:
+    logs-benchmark.victoriametrics.com/system: ${POOL}
+  nodeSelector:
+    logs-benchmark.victoriametrics.com/system: ${POOL}
+  tolerations:
+    - key: logs-benchmark.victoriametrics.com/system
+      operator: Equal
+      value: ${POOL}
+      effect: NoSchedule

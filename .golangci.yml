@@ -1,0 +1,11 @@
+version: "2"
+linters:
+  enable:
+    - errorlint
+    - whitespace
+  settings:
+    errorlint:
+      errorf: true
+  exclusions:
+    presets:
+      - std-error-handling

@@ -1,0 +1,49 @@
+# The querier Deployment: one pod measuring every listed system, with one
+# -systemName/-systemType/-systemAddr triple per system (read endpoint:
+# queryAddr when set, else addr).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: querier
+  labels:
+    app: bench
+    role: querier
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bench
+      role: querier
+  template:
+    metadata:
+      labels:
+        app: bench
+        role: querier
+        # bench machinery, not a system under test
+        logs-benchmark.victoriametrics.com/system: harness
+    spec:
+      containers:
+        - name: querier
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          args:
+            - -role=querier
+{{- range $sys := .Values.systems }}
+            - -systemName={{ $sys.name }}
+            - -systemType={{ $sys.type }}
+            - -systemAddr={{ $sys.queryAddr | default $sys.addr }}
+{{- end }}
+            - -queryInterval={{ $.Values.querier.interval }}
+            - -queryTimeout={{ $.Values.querier.timeout }}
+            - -hosts={{ int $.Values.writer.hosts }}
+            - -apps={{ int $.Values.writer.apps }}
+            - -seed={{ int $.Values.writer.seed }}
+            - -httpListenAddr=:8080
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 2

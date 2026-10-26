@@ -1,0 +1,16 @@
+# Run config: dev loop on the local kind cluster. One VictoriaLogs, light
+# fixed-rate load, short start delay - just enough to exercise the writer,
+# querier, and dashboards while developing. Not a benchmark.
+writer:
+  rate: 2000
+  dropOnFull: false
+  startDelaySeconds: 10
+
+querier:
+  interval: 10s
+  timeout: 30s
+
+systems:
+  - name: victorialogs
+    type: victorialogs
+    addr: http://victorialogs-victoria-logs-single-server:9428

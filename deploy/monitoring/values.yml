@@ -1,0 +1,18 @@
+# victoria-metrics-k8s-stack values. Alerting components are off: the
+# benchmark reads dashboards, it does not alert.
+alertmanager:
+  enabled: false
+vmalert:
+  enabled: false
+grafana:
+  enabled: true
+  sidecar:
+    dashboards:
+      # pick up dashboard ConfigMaps from every namespace, not just Grafana's own
+      searchNamespace: ALL
+kube-state-metrics:
+  # Expose the logs-benchmark.victoriametrics.com/system pod label on
+  # kube-state-metrics series, so resource metrics can be grouped per system
+  # under test. Without it the label is not published at all.
+  metricLabelsAllowlist:
+    - pods=[logs-benchmark.victoriametrics.com/system]

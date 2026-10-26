@@ -1,0 +1,36 @@
+# OpenSearch via the official opensearch-project/opensearch chart, single node.
+# Only what the benchmark methodology requires is overridden.
+# Engine config for every instance, hardware-agnostic; per-instance identity:
+# pin/opensearch.yaml; sizing (PVC size, storage class and the JVM heap): the
+# benchmark's systems/opensearch.yaml.
+#
+# The index template (field types and 0 replicas) is not chart config: the
+# harness installs it before the first write (internal/systems/opensearch.go).
+#
+# The client Service is named from masterService (default
+# opensearch-cluster-master), not from the release name, so a second instance
+# in one namespace needs masterService overridden.
+singleNode: true
+replicas: 1
+
+# pinned so the measured version never floats with chart updates
+image:
+  tag: "3.9.0"
+
+# security plugin off: plain HTTP on 9200, no auth and no TLS like every other
+# system; it also skips the demo config and the 2.12+ admin-password requirement.
+extraEnvs:
+  - name: DISABLE_INSTALL_DEMO_CONFIG
+    value: "true"
+  - name: DISABLE_SECURITY_PLUGIN
+    value: "true"
+
+# No limits: the system owns its node, so the node is the cap; requests are only
+# a scheduling floor.
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+persistence:
+  enabled: true

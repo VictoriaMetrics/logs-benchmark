@@ -1,0 +1,76 @@
+# Grafana Loki via the grafana-community/loki chart, single-binary mode with
+# filesystem storage (one pod, like every other system under test).
+# Engine config for every instance, hardware-agnostic; per-instance identity:
+# pin/loki.yaml; sizing (PVC size and storage class): the benchmark's
+# systems/loki.yaml.
+#
+# The client Service takes the release name only when that name contains "loki"
+# (helm fullname rule), so keep "loki" in the instance name.
+deploymentMode: Monolithic
+
+loki:
+  # pinned so the measured version never floats with chart updates
+  image:
+    tag: "3.7.8"
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem
+  schemaConfig:
+    configs:
+      - from: "2024-01-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+  limits_config:
+    # Ingestion limits sized far above any run's volume, so the rate limiter
+    # never caps ingestion. Stream limits off: Loki enforces the smaller of the
+    # local and the global limit, and the global one defaults to 5000 streams,
+    # a figure a run config can reach (streams = hosts x apps).
+    max_streams_per_user: 0
+    max_global_streams_per_user: 0
+    ingestion_rate_mb: 1024
+    ingestion_burst_size_mb: 2048
+
+singleBinary:
+  replicas: 1
+  # No limits: the pod owns its node, so the node is the cap; the request is
+  # only a scheduling floor.
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  persistence:
+    enabled: true
+    # Delete the PVC on uninstall, so a reinstall starts from an empty disk.
+    enableStatefulSetAutoDeletePVC: true
+
+# Single-node: keep only the single-binary pod, drop every extra component so
+# nothing else needs a node or a toleration.
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+gateway:
+  enabled: false
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+lokiCanary:
+  enabled: false
+# The rules sidecar watches ConfigMaps for alerting rules; no rules here, and
+# its CPU and memory would count as Loki's.
+sidecar:
+  rules:
+    enabled: false
+test:
+  enabled: false
+minio:
+  enabled: false

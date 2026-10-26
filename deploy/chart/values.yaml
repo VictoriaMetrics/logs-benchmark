@@ -1,0 +1,65 @@
+# Defaults for the bench chart (writer + querier + dashboards). A benchmark run
+# is a config file layered on top of these defaults with `helm -f`; ready-made
+# run configs live in deploy/benchmarks/<benchmark>/.
+
+# Bench image; both roles run from it.
+image:
+  repository: docker.io/victoriametrics/logs-benchmark
+  tag: v1.0.0
+  pullPolicy: IfNotPresent
+
+# Writer: generates one record stream and fans it out to every listed system.
+writer:
+  # target ingestion rate in lines/s (the ramp's start rate when rampStep > 0)
+  rate: 20000
+  # ramp: raise the target by rampStep every rampInterval up to rampMax, hold it
+  # for rampHold, then stop generating and idle. All zero = fixed rate.
+  rampStep: 0
+  rampInterval: 5m
+  rampMax: 0
+  rampHold: 0
+  # on a full per-system channel: true drops the overflow, false blocks the
+  # shared generator (every system then receives the identical stream).
+  dropOnFull: false
+  # per-system fan-out channel capacity, in lines
+  buffer: 200000
+  # sleep before ingesting so every system is up first
+  startDelaySeconds: 180
+  # lines per ingestion request
+  batchLines: 2000
+  # send workers per system = in-flight requests per system. Part of the load
+  # shape, so published run configs pin it; 0 = 2x the harness CPUs
+  workers: 0
+  # parallel generator goroutines; 0 = the harness CPUs. Generation capacity
+  # and which random value lands on which line depend on it; the fleet and
+  # the value distributions do not
+  generators: 0
+  # stream cardinality: the number of log streams is hosts x apps
+  hosts: 40
+  apps: 30
+  # generator seed for reproducible records
+  seed: 1
+
+# Querier: identical for every system.
+querier:
+  # how often a round of the query set starts; 0 disables the latency loop (the
+  # stored-rows stats loop always runs)
+  interval: 10s
+  # per-query timeout; a timed-out query counts as an error
+  timeout: 30s
+
+# The instances under test - supplied by the run's config file, one entry per
+# INSTANCE (not per engine type). Each entry has a `name`, a `type` (the engine
+# adapter in internal/systems), an `addr` (ingest endpoint) and an optional
+# `queryAddr` (read endpoint; defaults to addr). `name` is the identity: it is
+# the 'system' metric label and must equal the instance's helm release name and
+# its logs-benchmark.victoriametrics.com/system pod label.
+# Example - two instances of one engine type:
+#   systems:
+#     - name: vl-small
+#       type: victorialogs
+#       addr: http://vl-small-victoria-logs-single-server:9428
+#     - name: vl-large
+#       type: victorialogs
+#       addr: http://vl-large-victoria-logs-single-server:9428
+systems: []

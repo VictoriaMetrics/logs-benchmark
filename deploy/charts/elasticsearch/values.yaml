@@ -1,0 +1,21 @@
+# The values are filled in by three files at install time: the engine config
+# (deploy/systems/elasticsearch.yml), the benchmark's sizing overlay
+# (systems/elasticsearch.yaml) and the pin (deploy/systems/pin/elasticsearch.yaml).
+
+# Instance name. It becomes the CR name, the pod label and the node placement,
+# so it must equal the node pool's
+# logs-benchmark.victoriametrics.com/system value. No default.
+pool: ""
+
+version: ""
+
+# Rendered under nodeSets[0].config.
+config: {}
+
+# Rendered on the elasticsearch container.
+resources: {}
+
+storage:
+  size: ""
+  # Empty leaves the cluster's default storage class.
+  className: ""

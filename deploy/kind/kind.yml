@@ -1,0 +1,10 @@
+# Local kind cluster for developing the benchmark.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: logs-bench-dev
+nodes:
+  - role: control-plane
+    # Placement label a pinned system instance selects on. A label key holds
+    # one value, so this single node can host exactly one pinned instance.
+    labels:
+      logs-benchmark.victoriametrics.com/system: victorialogs

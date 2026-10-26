@@ -1,0 +1,7 @@
+apiVersion: v2
+name: elasticsearch
+description: One Elasticsearch CR for the ECK operator, as one instance under test.
+type: application
+# Chart version, not the Elasticsearch version: that is pinned in the engine
+# values file.
+version: 0.1.0

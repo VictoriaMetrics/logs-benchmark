@@ -1,0 +1,11 @@
+# The bench dashboard as a ConfigMap; the grafana_dashboard label is what the
+# Grafana sidecar looks for.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logs-bench-dashboard
+  labels:
+    grafana_dashboard: "1"
+data:
+  logs-bench.json: |-
+{{ .Files.Get "dashboards/logs-bench.json" | indent 4 }}

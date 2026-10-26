@@ -1,0 +1,16 @@
+# Scrapes /metrics on the http port of every `app: bench` pod, in any namespace
+# (namespaceSelector.any). Needs the VMPodScrape CRD, so apply it after the
+# victoria-metrics-k8s-stack install.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: bench
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      app: bench
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics

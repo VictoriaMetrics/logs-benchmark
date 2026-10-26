@@ -1,0 +1,15 @@
+# Labels VictoriaLogs' pods and pins them onto its dedicated node
+# (engine config: ../victorialogs.yml). ${POOL} is filled in at install time and
+# must match that node pool's logs-benchmark.victoriametrics.com/system label
+# and NoSchedule taint, or the pod will not schedule. Never applied
+# unsubstituted.
+server:
+  podLabels:
+    logs-benchmark.victoriametrics.com/system: ${POOL}
+  nodeSelector:
+    logs-benchmark.victoriametrics.com/system: ${POOL}
+  tolerations:
+    - key: logs-benchmark.victoriametrics.com/system
+      operator: Equal
+      value: ${POOL}
+      effect: NoSchedule

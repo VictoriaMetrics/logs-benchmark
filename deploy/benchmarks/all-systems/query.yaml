@@ -1,0 +1,71 @@
+# Run config: query-latency benchmark across all six systems.
+#
+# The writer holds a FIXED ingest rate while the querier runs the query set
+# against every system in rounds, giving latency percentiles per query shape per
+# system. Ingest and query are separate runs on purpose: at the ingest ceiling
+# every system is CPU-saturated and the latencies would only measure the
+# contention. See README.md here for the runbook.
+#
+# Usage: layered on top of chart defaults via helm -f.
+
+writer:
+  # Fixed background rate. dropOnFull=false makes the shared generator BLOCK on
+  # a full channel, so every system gets the identical stream and the query
+  # results are comparable - but the rate must then stay below the SLOWEST
+  # listed system's sustainable ingest (found with ingest.yaml), or the whole
+  # fan-out is dragged down to it: below the lowest ceiling ingest.yaml
+  # measures on the same hardware (the collector-based systems, SigNoz and
+  # ClickStack).
+  rate: 5000
+  rampStep: 0
+  rampMax: 0
+  rampHold: 0
+  dropOnFull: false
+  buffer: 200000
+  startDelaySeconds: 180
+  batchLines: 2000
+  # in-flight requests per system; pinned so the load shape does not change
+  # with the harness machine; same as ingest.yaml
+  workers: 32
+  # streams = hosts x apps = 5000 (125 nodes running 40 apps each); must match
+  # ingest.yaml so both runs query the same data shape
+  hosts: 125
+  apps: 40
+  seed: 1
+
+querier:
+  # A round of the query set every 10s: enough samples for tight latency
+  # percentiles.
+  interval: 10s
+  timeout: 30s
+
+# The six instances under test. `name` must equal the POOL used at install time
+# (make install-<engine> POOL=<name>) and is the `system` metric label. `addr`
+# is the ingest endpoint, `queryAddr` the read endpoint when the two differ.
+systems:
+  - name: victorialogs
+    type: victorialogs
+    addr: http://victorialogs-victoria-logs-single-server:9428
+  - name: elasticsearch
+    type: elasticsearch
+    # ECK names the service <CR name>-es-http, and the CR name is the POOL
+    addr: http://elasticsearch-es-http:9200
+  # SigNoz splits write/read: writer -> OTel collector, querier -> query-service.
+  - name: signoz
+    type: signoz
+    addr: http://signoz-otel-collector:4318
+    queryAddr: http://signoz:8080
+  - name: loki
+    type: loki
+    addr: http://loki:3100
+  - name: opensearch
+    type: opensearch
+    # the chart's service is opensearch-cluster-master regardless of clusterName
+    addr: http://opensearch-cluster-master:9200
+  # ClickStack splits write/read like SigNoz, and the measured read path is the
+  # HyperDX product REST API, not raw ClickHouse. The chart exposes no Service
+  # for it; queryAddr points at deploy/systems/clickstack-hdx-api.yml's.
+  - name: clickstack
+    type: clickstack
+    addr: http://clickstack-otel-collector:4318
+    queryAddr: http://clickstack-hdx-api:8000

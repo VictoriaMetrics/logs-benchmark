@@ -1,0 +1,6 @@
+# Sizing for the local kind cluster: a laptop node with no cloud disk.
+server:
+  persistentVolume:
+    size: 10Gi
+    # kind's provisioner is named "standard"
+    storageClassName: standard
