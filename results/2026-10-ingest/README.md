@@ -1,8 +1,9 @@
 # Ingestion test, six engines, one node each (October 2026)
 
 Results of benchmark 1 in the [roadmap](../../README.md#roadmap), discussed in
-the [blog post](TODO_BLOG_URL). The method is in the [README](../../README.md)
-and the [runbook](../../deploy/benchmarks/all-systems/README.md).
+the [blog post](https://victoriametrics.com/blog/structured-log-ingestion-benchmark/).
+The method is in the [README](../../README.md) and the
+[runbook](../../deploy/benchmarks/all-systems/README.md).
 
 ## Setup
 

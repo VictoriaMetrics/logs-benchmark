@@ -1,10 +1,10 @@
 # logs-benchmark
 
-logs-benchmark is a harness that compares log databases. It serves two
-goals:
+logs-benchmark is a harness that compares engines that store and search
+logs. It serves two goals:
 
-- **Guidance for users**: each log database is good at certain use cases,
-  and users often ask which one they should use. This benchmark helps them
+- **Guidance for users**: each engine is good at certain use cases, and
+  users often ask which one they should use. This benchmark helps them
   answer that question for the kind of logs they have. So far, it covers
   structured logs, as many services on Kubernetes write them. Other kinds,
   such as unstructured logs and wide events, will follow.
@@ -26,9 +26,9 @@ SigNoz and ClickStack.
 | 6 | Ingestion and query tests, other kinds of logs         | to be decided       | planned     |
 
 Each benchmark will get a post on the VictoriaMetrics blog. For benchmark 1,
-see the [blog post](TODO_BLOG_URL) and the
-[results](results/2026-10-ingest/README.md). For now, the code covers only
-the first two benchmarks.
+see the [blog post](https://victoriametrics.com/blog/structured-log-ingestion-benchmark/)
+and the [results](results/2026-10-ingest/README.md). For now, the code covers
+only the first two benchmarks.
 
 ## The workload
 
