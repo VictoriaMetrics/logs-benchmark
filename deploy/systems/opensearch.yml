@@ -25,8 +25,7 @@ extraEnvs:
   - name: DISABLE_SECURITY_PLUGIN
     value: "true"
 
-# No limits: the system owns its node, so the node is the cap; requests are only
-# a scheduling floor.
+# No limits, so OpenSearch gets its whole node.
 resources:
   requests:
     cpu: 250m

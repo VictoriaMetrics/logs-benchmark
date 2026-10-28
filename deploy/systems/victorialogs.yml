@@ -7,10 +7,7 @@ server:
   # pinned so the measured version never floats with chart updates
   image:
     tag: v1.53.0
-  # No limits: the system owns its node, so the node is the cap. A CPU limit
-  # would CFS-throttle the parallel scan of VictoriaLogs, which also sizes itself
-  # to the node's RAM.
-  # Requests are only a scheduling floor.
+  # No limits, so VictoriaLogs gets its whole node.
   resources:
     requests:
       cpu: 250m

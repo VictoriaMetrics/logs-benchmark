@@ -4,9 +4,8 @@
 # pin/signoz.yaml; sizing (PVC size and storage class): the benchmark's
 # systems/signoz.yaml.
 #
-# No resource limits (a hard limit would cap performance and skew the result);
-# ClickHouse self-caps via max_server_memory_usage_to_ram_ratio below. Requests
-# are small floors so the whole stack still schedules onto one node.
+# No limits, so the stack gets its whole node. The requests stay small, so all
+# of its pods fit on that node.
 
 clickhouse:
   resources:

@@ -27,10 +27,10 @@ loki:
           prefix: index_
           period: 24h
   limits_config:
-    # Ingestion limits sized far above any run's volume, so the rate limiter
-    # never caps ingestion. Stream limits off: Loki enforces the smaller of the
-    # local and the global limit, and the global one defaults to 5000 streams,
-    # a figure a run config can reach (streams = hosts x apps).
+    # By default, Loki rejects logs above 4 MB/s and above 5000 streams per
+    # tenant. A run sends more than that (it has hosts x apps streams), so the
+    # rate limits are set far above any run, and both stream limits are off.
+    # Both must be off, because Loki uses the lower of the two.
     max_streams_per_user: 0
     max_global_streams_per_user: 0
     ingestion_rate_mb: 1024
@@ -38,8 +38,7 @@ loki:
 
 singleBinary:
   replicas: 1
-  # No limits: the pod owns its node, so the node is the cap; the request is
-  # only a scheduling floor.
+  # No limits, so Loki gets its whole node.
   resources:
     requests:
       cpu: 250m

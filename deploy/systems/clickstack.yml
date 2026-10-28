@@ -26,10 +26,10 @@ clickhouse:
           repository: clickhouse/clickhouse-server
           tag: "25.7-alpine" # pinned so the measured version never floats
         resources:
-          # Small floor and no limit, so ClickHouse bursts into the whole node.
-          # The floor must stay small: Keeper, Mongo, HyperDX and the collector
-          # all schedule onto the same node. `limits: null` deletes the chart's
-          # default 2Gi memory cap, which a plain map merge would keep.
+          # No limit, so ClickHouse can use the whole node. The request stays
+          # small, because Keeper, Mongo, HyperDX and the collector share that
+          # node. `limits: null` removes the chart's default 2Gi memory limit,
+          # which a plain map merge would keep.
           requests:
             cpu: 500m
             memory: 1Gi
