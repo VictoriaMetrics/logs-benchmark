@@ -81,6 +81,7 @@ GOLANGCI_LINT_VERSION := 2.14.0
 	kind-up kind-down image kind-load release \
 	check-context check-pool check-bench check-config check-no-pool helm-repos \
 	$(addprefix install-,$(ENGINES)) $(addprefix uninstall-,$(ENGINES)) \
+	install-ravel uninstall-ravel check-ravel-image ravel-scrape-up \
 	install-all-systems uninstall-all-systems \
 	deploy-bench undeploy-bench deploy-dev undeploy-dev \
 	monitoring-up monitoring-down monitoring-up-dev monitoring-down-dev \
@@ -258,6 +259,30 @@ uninstall-clickstack: check-context check-pool
 	@if ! $(KUBECTL) get clickhousecluster -o name 2>/dev/null | grep -q .; then \
 		$(HELM) uninstall clickstack-operators 2>/dev/null || true; \
 	fi
+
+# Ravel = one rendered Deployment + Service (deploy/systems/ravel-render.sh)
+# on the GCS bucket RAVEL_BUCKET (default <project>-logsbench-<POOL>, made by
+# deploy/benchmarks/ravel-gcs/gcp-up.sh with the "ravel" service account and
+# the ravel-bench Secret). RAVEL_FLAGS is appended to the
+# ravel-server command line; every non-default flag is disclosed in that README.
+# Set RAVEL_VERSION to a released ravel-server tag, or RAVEL_IMAGE (a digest works too).
+RAVEL_VERSION ?=
+RAVEL_IMAGE ?= ghcr.io/nofireai/ravel-server:$(RAVEL_VERSION)
+RAVEL_FLAGS ?=
+RAVEL_BUCKET ?= $(shell gcloud config get-value project 2>/dev/null)-logsbench-$(POOL)
+
+install-ravel: check-context check-pool check-ravel-image
+	deploy/systems/ravel-render.sh $(POOL) $(RAVEL_IMAGE) $(RAVEL_BUCKET) $(RAVEL_FLAGS) | $(KUBECTL) apply -f -
+
+check-ravel-image:
+	@case "$(RAVEL_IMAGE)" in *:) echo "set RAVEL_VERSION to a released ravel-server tag, or set RAVEL_IMAGE"; exit 1;; esac
+
+uninstall-ravel: check-context check-pool
+	deploy/systems/ravel-render.sh $(POOL) $(RAVEL_IMAGE) $(RAVEL_BUCKET) | $(KUBECTL) delete --ignore-not-found -f -
+
+# Scrapes ravel-server's own /metrics (acks, flushes, object-store requests).
+ravel-scrape-up: check-context
+	$(KUBECTL_MON) apply -f deploy/monitoring/ravel-podscrape.yaml
 
 # One instance per engine on a node pool named after the engine, so each
 # per-engine target gets POOL=<engine>. An explicit POOL is refused: one
