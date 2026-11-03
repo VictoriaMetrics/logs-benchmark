@@ -83,10 +83,16 @@ The run config `ingest-ramp.yaml` has the writer settings of
 
 ## Read the results
 
-The "Logs Benchmark" dashboard panels apply as in `all-systems`, except that
-Ravel has no volume: its disk figures are the bucket's bytes once the run
-ends, `gcloud storage du -s gs://<bucket>`, divided by its stored rows, and its
-request counts come from ravel-server's own `/metrics`.
+Do the run three times. The numbers are computed as for benchmark 1, and the
+method is in [the results](../../../results/2026-11-ravel-gcs/README.md). The
+repository has no script for it: read the "Logs Benchmark" dashboard panels,
+which apply as in `all-systems`, per 10-minute step.
+
+Ravel has no volume. Its disk space is the bucket's bytes once they stay the
+same for 10 minutes, `gcloud storage du -s gs://<bucket>`, divided by its
+stored rows. Its object-store writes come from ravel-server's own `/metrics`
+(`ravel_store_calls_total` and `ravel_store_bytes_total`, `op="put"`), which
+`make ravel-scrape-up` collects.
 
 ## Clean up
 
