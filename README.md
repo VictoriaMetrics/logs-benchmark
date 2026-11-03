@@ -12,7 +12,7 @@ logs. It serves two goals:
   where VictoriaLogs stands today and which areas to improve next.
 
 Supported engines: VictoriaLogs, Elasticsearch, OpenSearch, Grafana Loki,
-SigNoz and ClickStack.
+SigNoz, ClickStack and Ravel.
 
 ## Roadmap
 
@@ -27,7 +27,9 @@ SigNoz and ClickStack.
 
 Each benchmark will get a post on the VictoriaMetrics blog. For benchmark 1,
 see the [blog post](https://victoriametrics.com/blog/structured-log-ingestion-benchmark/)
-and the [results](results/2026-10-ingest/README.md). For now, the code covers
+and the [results](results/2026-10-ingest/README.md). The ingestion test of
+Ravel on object storage against VictoriaLogs has its own
+[results](results/2026-11-ravel-gcs/README.md). For now, the code covers
 only the first two benchmarks.
 
 ## The workload
