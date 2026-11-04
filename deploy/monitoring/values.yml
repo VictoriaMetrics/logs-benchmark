@@ -10,6 +10,14 @@ grafana:
     dashboards:
       # pick up dashboard ConfigMaps from every namespace, not just Grafana's own
       searchNamespace: ALL
+vmsingle:
+  spec:
+    extraArgs:
+      # The kubelet scrapes copy every node label onto each series, and a GKE
+      # node carries about 30. With the default limit of 40, VictoriaMetrics
+      # drops the per-pod cAdvisor and resource series the CPU, memory and
+      # disk panels read.
+      maxLabelsPerTimeseries: "64"
 kube-state-metrics:
   # Expose the logs-benchmark.victoriametrics.com/system pod label on
   # kube-state-metrics series, so resource metrics can be grouped per system
