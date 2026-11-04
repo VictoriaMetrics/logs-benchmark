@@ -1,0 +1,17 @@
+# Scrapes ravel-server's /metrics on every Ravel pod, in any namespace, so the
+# readout can split Ravel's cost into acks, flushes and object-store requests.
+# Needs the VMPodScrape CRD, so apply it after the victoria-metrics-k8s-stack
+# install (make ravel-scrape-up).
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: ravel
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ravel
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics

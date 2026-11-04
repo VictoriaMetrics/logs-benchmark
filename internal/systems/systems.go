@@ -80,6 +80,10 @@ func NewWriteClient(sysType, addr string) (WriteClient, error) {
 		return &opensearch{addr: addr}, nil
 	case "clickstack":
 		return &clickstack{addr: addr}, nil
+	case "ravel":
+		return &ravel{addr: addr}, nil
+	case "ravel-buffered":
+		return &ravel{addr: addr, ingestMode: "buffered"}, nil
 	}
 	return nil, fmt.Errorf("unknown system type %q", sysType)
 }
@@ -148,6 +152,10 @@ func NewQueryClient(sysType, addr string) (QueryClient, error) {
 		return &opensearch{addr: addr}, nil
 	case "clickstack":
 		return &clickstack{addr: addr}, nil
+	case "ravel":
+		return &ravel{addr: addr}, nil
+	case "ravel-buffered":
+		return &ravel{addr: addr, ingestMode: "buffered"}, nil
 	}
 	return nil, fmt.Errorf("unknown system type %q", sysType)
 }

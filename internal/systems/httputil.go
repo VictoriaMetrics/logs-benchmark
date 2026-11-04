@@ -32,6 +32,11 @@ const maxRetryDuration = 30 * time.Second
 // Returns the final HTTP status alongside the body. status is 0 when the request
 // never got a response.
 func doReq(ctx context.Context, method, reqURL, contentType string, body []byte) (respBody []byte, status int, retries int, err error) {
+	return doReqHeader(ctx, method, reqURL, contentType, nil, body)
+}
+
+// doReqHeader is doReq with extra request headers (e.g. auth) set on every attempt.
+func doReqHeader(ctx context.Context, method, reqURL, contentType string, header http.Header, body []byte) (respBody []byte, status int, retries int, err error) {
 	ctx, cancel := context.WithTimeout(ctx, maxRetryDuration)
 	defer cancel()
 	backoff := 100 * time.Millisecond
@@ -39,6 +44,9 @@ func doReq(ctx context.Context, method, reqURL, contentType string, body []byte)
 		req, err := http.NewRequestWithContext(ctx, method, reqURL, bytes.NewReader(body))
 		if err != nil {
 			return nil, 0, retries, err
+		}
+		for k, v := range header {
+			req.Header[k] = v
 		}
 		if contentType != "" {
 			req.Header.Set("Content-Type", contentType)
@@ -74,9 +82,17 @@ func doReq(ctx context.Context, method, reqURL, contentType string, body []byte)
 
 // doQuery sends one request and returns the fully-read body (no retry).
 func doQuery(ctx context.Context, method, reqURL, contentType string, body []byte) ([]byte, error) {
+	return doQueryHeader(ctx, method, reqURL, contentType, nil, body)
+}
+
+// doQueryHeader is doQuery with extra request headers.
+func doQueryHeader(ctx context.Context, method, reqURL, contentType string, header http.Header, body []byte) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, method, reqURL, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
+	}
+	for k, v := range header {
+		req.Header[k] = v
 	}
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)

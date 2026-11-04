@@ -1,0 +1,10 @@
+# Builds the harness image on Cloud Build. The Dockerfile uses BuildKit's
+# $BUILDPLATFORM, which the default `gcloud builds submit --tag` builder does
+# not set, so BuildKit is switched on explicitly.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    env:
+      - DOCKER_BUILDKIT=1
+    args: ["build", "-t", "${_IMAGE}", "."]
+images:
+  - "${_IMAGE}"

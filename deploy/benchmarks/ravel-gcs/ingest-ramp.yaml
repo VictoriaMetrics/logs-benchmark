@@ -1,0 +1,30 @@
+# Run config: the ingest ramp of all-systems/ingest.yaml with VictoriaLogs as
+# the calibration reference and one Ravel instance on its own node and bucket
+# (ravel-buffered, x-ravel-ingest-mode: buffered; flags in README.md).
+
+writer:
+  rate: 10000
+  rampStep: 10000
+  rampInterval: 10m
+  rampMax: 180000
+  rampHold: 10m
+  dropOnFull: true
+  buffer: 400000
+  startDelaySeconds: 180
+  batchLines: 2000
+  workers: 32
+  hosts: 125
+  apps: 40
+  seed: 1
+
+querier:
+  interval: 0
+  timeout: 30s
+
+systems:
+  - name: victorialogs
+    type: victorialogs
+    addr: http://victorialogs-victoria-logs-single-server:9428
+  - name: ravel-buffered
+    type: ravel-buffered
+    addr: http://ravel-buffered:4318
