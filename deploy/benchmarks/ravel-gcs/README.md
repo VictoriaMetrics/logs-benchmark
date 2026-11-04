@@ -23,8 +23,8 @@ counts durable rows, as for every other engine.
 
 ## Ravel configuration
 
-The run uses a released Ravel image (`<RAVEL_VERSION>`, passed as
-`RAVEL_VERSION`) at its shipped defaults. The only flags set explicitly are
+The run uses a released Ravel image, passed as `RAVEL_VERSION` (0.30.0 for
+the November 2026 results), at its shipped defaults. The only flags set explicitly are
 the ones the install passes:
 
 ```bash
@@ -67,7 +67,7 @@ export CONTEXT=gke_${PROJECT}_${ZONE}_${CLUSTER} HARNESS_IMAGE=<printed by gcp-u
 
 make install-victorialogs POOL=victorialogs CONTEXT=$CONTEXT BENCH=$BENCH CONFIRMED=1
 make install-ravel POOL=ravel-buffered CONTEXT=$CONTEXT CONFIRMED=1 \
-  RAVEL_VERSION=<RAVEL_VERSION> RAVEL_FLAGS="$RAVEL_FLAGS"
+  RAVEL_VERSION=0.30.0 RAVEL_FLAGS="$RAVEL_FLAGS"
 make monitoring-up ravel-scrape-up CONTEXT=$CONTEXT CONFIRMED=1
 make status CONTEXT=$CONTEXT
 
